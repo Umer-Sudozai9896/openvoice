@@ -31,8 +31,8 @@ en_source_default_se = torch.load(f'{en_ckpt_base}/en_default_se.pth').to(device
 en_source_style_se = torch.load(f'{en_ckpt_base}/en_style_se.pth').to(device)
 zh_source_se = torch.load(f'{zh_ckpt_base}/zh_default_se.pth').to(device)
 
-# This online demo mainly supports English and Chinese
-supported_languages = ['zh', 'en']
+# This online demo mainly supports English, Chinese, and French
+supported_languages = ['zh', 'en', 'fr']
 
 def predict(prompt, style, audio_file_pth, mic_file_path, use_mic, agree):
     # initialize a empty info
@@ -76,7 +76,7 @@ def predict(prompt, style, audio_file_pth, mic_file_path, use_mic, agree):
                 None,
             )
 
-    else:
+    elif language_predicted == "en":
         tts_model = en_base_speaker_tts
         if style == 'default':
             source_se = en_source_default_se
@@ -86,6 +86,40 @@ def predict(prompt, style, audio_file_pth, mic_file_path, use_mic, agree):
         if style not in ['default', 'whispering', 'shouting', 'excited', 'cheerful', 'terrified', 'angry', 'sad', 'friendly']:
             text_hint += f"[ERROR] The style {style} is not supported for English, which should be in ['default', 'whispering', 'shouting', 'excited', 'cheerful', 'terrified', 'angry', 'sad', 'friendly']\n"
             gr.Warning(f"The style {style} is not supported for English, which should be in ['default', 'whispering', 'shouting', 'excited', 'cheerful', 'terrified', 'angry', 'sad', 'friendly']")
+            return (
+                text_hint,
+                None,
+                None,
+            )
+
+    elif language_predicted == "fr":
+        # French uses the English TTS model but with different language parameter
+        tts_model = en_base_speaker_tts
+        if style == 'default':
+            source_se = en_source_default_se
+        else:
+            source_se = en_source_style_se
+        language = 'French'
+        if style not in ['default', 'whispering', 'shouting', 'excited', 'cheerful', 'terrified', 'angry', 'sad', 'friendly']:
+            text_hint += f"[ERROR] The style {style} is not supported for French, which should be in ['default', 'whispering', 'shouting', 'excited', 'cheerful', 'terrified', 'angry', 'sad', 'friendly']\n"
+            gr.Warning(f"The style {style} is not supported for French, which should be in ['default', 'whispering', 'shouting', 'excited', 'cheerful', 'terrified', 'angry', 'sad', 'friendly']")
+            return (
+                text_hint,
+                None,
+                None,
+            )
+
+    else:
+        # Fallback for other languages (use English model)
+        tts_model = en_base_speaker_tts
+        if style == 'default':
+            source_se = en_source_default_se
+        else:
+            source_se = en_source_style_se
+        language = 'English'
+        if style not in ['default', 'whispering', 'shouting', 'excited', 'cheerful', 'terrified', 'angry', 'sad', 'friendly']:
+            text_hint += f"[ERROR] The style {style} is not supported for this language, which should be in ['default', 'whispering', 'shouting', 'excited', 'cheerful', 'terrified', 'angry', 'sad', 'friendly']\n"
+            gr.Warning(f"The style {style} is not supported for this language, which should be in ['default', 'whispering', 'shouting', 'excited', 'cheerful', 'terrified', 'angry', 'sad', 'friendly']")
             return (
                 text_hint,
                 None,
@@ -117,10 +151,10 @@ def predict(prompt, style, audio_file_pth, mic_file_path, use_mic, agree):
             None,
             None,
         )
-    if len(prompt) > 200:
-        text_hint += f"[ERROR] Text length limited to 200 characters for this demo, please try shorter text. You can clone our open-source repo and try for your usage \n"
+    if len(prompt) > 2000:
+        text_hint += f"[ERROR] Text length limited to 2000 characters for this demo, please try shorter text. You can clone our open-source repo and try for your usage \n"
         gr.Warning(
-            "Text length limited to 200 characters for this demo, please try shorter text. You can clone our open-source repo for your usage"
+            "Text length limited to 2000 characters for this demo, please try shorter text. You can clone our open-source repo for your usage"
         )
         return (
             text_hint,
@@ -198,7 +232,7 @@ markdown_table_v2 = """
 content = """
 <div>
   <strong>For multi-lingual & cross-lingual examples, please refer to <a href='https://github.com/myshell-ai/OpenVoice/blob/main/demo_part2.ipynb'>this jupyter notebook</a>.</strong>
-  This online demo mainly supports <strong>English</strong>. The <em>default</em> style also supports <strong>Chinese</strong>. But OpenVoice can adapt to any other language as long as a base speaker is provided.
+  This online demo mainly supports <strong>English</strong>, <strong>Chinese</strong>, and <strong>French</strong>. The <em>default</em> style supports all languages. But OpenVoice can adapt to any other language as long as a base speaker is provided.
 </div>
 """
 wrapped_markdown_content = f"<div style='border: 1px solid #000; padding: 10px;'>{content}</div>"
@@ -254,12 +288,12 @@ with gr.Blocks(analytics_enabled=False) as demo:
         with gr.Column():
             input_text_gr = gr.Textbox(
                 label="Text Prompt",
-                info="One or two sentences at a time is better. Up to 200 text characters.",
+                info="One or two sentences at a time is better. Up to 2000 text characters.",
                 value="He hoped there would be stew for dinner, turnips and carrots and bruised potatoes and fat mutton pieces to be ladled out in thick, peppered, flour-fattened sauce.",
             )
             style_gr = gr.Dropdown(
                 label="Style",
-                info="Select a style of output audio for the synthesised speech. (Chinese only support 'default' now)",
+                info="Select a style of output audio for the synthesised speech. (Chinese only supports 'default', English and French support all styles)",
                 choices=['default', 'whispering', 'cheerful', 'terrified', 'angry', 'sad', 'friendly'],
                 max_choices=1,
                 value="default",

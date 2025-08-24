@@ -56,7 +56,7 @@ def split_audio_whisper(audio_path, target_dir='processed'):
         # filter out the segment shorter than 1.5s and longer than 20s
         save = audio_seg.duration_seconds > 1.5 and \
                 audio_seg.duration_seconds < 20. and \
-                len(text) >= 2 and len(text) < 200 
+                len(text) >= 2 and len(text) < 2000 
 
         if save:
             output_file = os.path.join(wavs_folder, fname)
