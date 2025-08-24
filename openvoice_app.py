@@ -117,10 +117,10 @@ def predict(prompt, style, audio_file_pth, mic_file_path, use_mic, agree):
             None,
             None,
         )
-    if len(prompt) > 20000:
-        text_hint += f"[ERROR] Text length limited to 20000 characters for this demo, please try shorter text. You can clone our open-source repo and try for your usage \n"
+    if len(prompt) > 200:
+        text_hint += f"[ERROR] Text length limited to 200 characters for this demo, please try shorter text. You can clone our open-source repo and try for your usage \n"
         gr.Warning(
-            "Text length limited to 20000 characters for this demo, please try shorter text. You can clone our open-source repo for your usage"
+            "Text length limited to 200 characters for this demo, please try shorter text. You can clone our open-source repo for your usage"
         )
         return (
             text_hint,
